@@ -1,0 +1,46 @@
+﻿@model IEnumerable<AssistMe.Data.AFileInfo>
+@{
+    Layout = null;
+}
+
+@helper ShowTree(IEnumerable<AssistMe.Data.AFileInfo> infos, int oldPadding)
+{ 
+    int padding = oldPadding + 10;
+    if (infos.Count() > 0)
+    {
+    <ul class="nav">
+        @foreach (var item in infos)
+        {
+            <li style="padding-left:@(padding)px">
+                <a href="index.html"><i class="@(item.Children.Any()?"fa fa-files-o fa-fw":"fa fa-edit fa-fw")"></i>@item.Name@if (item.Children.Any())
+                                                                                  {<span class="fa arrow" />}</a>
+                @if (item.Children.Count > 0)
+                {
+                    @ShowTree(item.Children, padding);
+                }
+            </li>
+        }
+    </ul>
+    }
+}
+<ul class="nav" id="side-menu">
+    <li class="sidebar-search">
+        <div class="input-group custom-search-form">
+            <input type="text" class="form-control" placeholder="Search...">
+            <span class="input-group-btn">
+                <button class="btn btn-default" type="button">
+                    <i class="fa fa-search"></i>
+                </button>
+            </span>
+        </div>
+        <!-- /input-group -->
+    </li>
+    @foreach (var item in Model)
+    {
+        <li style="padding-left: 10px">
+            <a href="index.html"><i class="@(item.Children.Any()?"fa fa-files-o fa-fw":"fa fa-edit fa-fw")"></i>@item.Name@if (item.Children.Any())
+                                                                              {<span class="fa arrow" />}</a>
+            @ShowTree(item.Children, 0)
+        </li>
+    }
+</ul>
