@@ -1,5 +1,6 @@
 ﻿using AssistMe.Data;
 using System.Collections.Generic;
+using System.Linq;
 using System.Web.Mvc;
 
 namespace AssistMe.Controllers
@@ -10,8 +11,7 @@ namespace AssistMe.Controllers
         public ActionResult Index()
         {
             var model = new List<AFileInfo>();
-            model.AddRange(DummyData.GetDummyStructure().Children);
-
+            model.AddRange(UserConfig.DB.AssistMeDrive.Children.Where(f => f.IsFolder));
             return PartialView(model);
         }
     }

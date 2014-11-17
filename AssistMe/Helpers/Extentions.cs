@@ -1,24 +1,27 @@
-﻿using Google.Apis.Drive.v2.Data;
+﻿using AssistMe.Data;
+using Google.Apis.Drive.v2.Data;
 using System.Linq;
 
 namespace AssistMe.Helpers
 {
     public static class Extentions
     {
-        public static T GetGFile<T>(this File file) where T : GFile
+        public static T GetGFile<T>(this File file) where T : AFileInfo
         {
-            GFile gfile = null;
-            if (typeof(T) == typeof(GDirectory))
-                gfile = new GDirectory();
+            AFileInfo gfile = null;
+            if (typeof(T) == typeof(AFolderInfo))
+                gfile = new AFolderInfo();
             else
-                gfile = new GFile();
+                gfile = new AFileInfo();
 
-            gfile.id = file.Id;
-            gfile.mimeType = file.MimeType;
-            gfile.title = file.Title;
+            gfile.Id = file.Id;
+            gfile.MimeType = file.MimeType;
+            gfile.FileName = file.Title;
+            gfile.DisplayName = file.Title;
+            gfile.Description = file.Title;
 
             if (file.Parents != null && file.Parents.Count > 0)
-                gfile.parentId = file.Parents.First().Id;
+                gfile.ParentId = file.Parents.First().Id;
 
             return (T)gfile;
         }

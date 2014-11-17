@@ -174,7 +174,9 @@
     <Compile Include="App_Start\RouteConfig.cs" />
     <Compile Include="App_Start\UserConfig.cs" />
     <Compile Include="App_Start\WebApiConfig.cs" />
+    <Compile Include="Controllers\AccountController.cs" />
     <Compile Include="Controllers\AuthCallbackController.cs" />
+    <Compile Include="Controllers\DocumentController.cs" />
     <Compile Include="Controllers\HomeController.cs" />
     <Compile Include="Controllers\SidebarController.cs" />
     <Compile Include="Data\AFileInfo.cs" />
@@ -186,10 +188,8 @@
     </Compile>
     <Compile Include="Helpers\AppFlowMetadata.cs" />
     <Compile Include="App_Start\AppConfig.cs" />
-    <Compile Include="Data\GDirectory.cs" />
-    <Compile Include="Data\GFile.cs" />
+    <Compile Include="Helpers\CustomAuthorizeAttribute.cs" />
     <Compile Include="Helpers\Extentions.cs" />
-    <Compile Include="Models\SidebarNode.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
@@ -200,6 +200,7 @@
     <Content Include="Content\metisMenu.css" />
     <Content Include="Content\metisMenu.min.css" />
     <Content Include="Content\template.css" />
+    <Content Include="Content\typeahead.css" />
     <Content Include="fonts\fontawesome-webfont.svg" />
     <Content Include="fonts\glyphicons-halflings-regular.svg" />
     <Content Include="Global.asax" />
@@ -211,14 +212,14 @@
     <Content Include="fonts\fontawesome-webfont.ttf" />
     <Content Include="fonts\fontawesome-webfont.woff" />
     <Content Include="fonts\FontAwesome.otf" />
-    <None Include="Scripts\jquery-1.9.0.intellisense.js" />
     <Content Include="Scripts\bootstrap.js" />
     <Content Include="Scripts\bootstrap.min.js" />
-    <Content Include="Scripts\jquery-1.9.0.js" />
-    <Content Include="Scripts\jquery-1.9.0.min.js" />
+    <None Include="Scripts\jquery-1.10.2.intellisense.js" />
+    <Content Include="Scripts\jquery-1.10.2.js" />
+    <Content Include="Scripts\jquery-1.10.2.min.js" />
     <Content Include="Scripts\metisMenu.js" />
     <Content Include="Scripts\template.js" />
-    <Content Include="Views\blank.html" />
+    <Content Include="Scripts\typeahead.bundle.js" />
     <Content Include="Web.config" />
     <Content Include="Web.Debug.config">
       <DependentUpon>Web.config</DependentUpon>
@@ -231,14 +232,16 @@
     <Content Include="Views\Shared\Error.cshtml" />
     <Content Include="Views\Shared\_Layout.cshtml" />
     <Content Include="Views\Home\Index.cshtml" />
-    <Content Include="Views\Shared\backup of _Layout.cshtml" />
-    <Content Include="Scripts\jquery-1.9.0.min.map" />
     <Content Include="Views\Home\Drive.cshtml" />
     <Content Include="Views\Sidebar\Index.cshtml" />
-    <Content Include="Views\Sidebar\Partial1.cshtml" />
+    <Content Include="Views\Account\Login.cshtml" />
+    <Content Include="Views\Document\Index.cshtml" />
+    <Content Include="Views\Document\Create.cshtml" />
+    <Content Include="Scripts\jquery-1.10.2.min.map" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="App_Data\" />
+    <Folder Include="Models\" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="packages.config" />
@@ -259,7 +262,7 @@
         <WebProjectProperties>
           <UseIIS>True</UseIIS>
           <AutoAssignPort>True</AutoAssignPort>
-          <DevelopmentServerPort>0</DevelopmentServerPort>
+          <DevelopmentServerPort>3604</DevelopmentServerPort>
           <DevelopmentServerVPath>/</DevelopmentServerVPath>
           <IISUrl>http://localhost:52191/</IISUrl>
           <NTLMAuthentication>False</NTLMAuthentication>

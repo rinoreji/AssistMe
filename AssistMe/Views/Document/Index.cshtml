@@ -1,0 +1,64 @@
+﻿@model IEnumerable<AssistMe.Data.AFileInfo>
+
+@{
+    ViewBag.Title = "Index";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<h2>Index</h2>
+
+<p>
+    @Html.ActionLink("Create New", "Create")
+</p>
+<table>
+    <tr>
+        <th>
+            @Html.DisplayNameFor(model => model.DisplayName)
+        </th>
+        <th>
+            @Html.DisplayNameFor(model => model.Description)
+        </th>
+        <th>
+            @Html.DisplayNameFor(model => model.DetailedInfo)
+        </th>
+        <th>
+            @Html.DisplayNameFor(model => model.ThumbnailUrl)
+        </th>
+        <th>
+            @Html.DisplayNameFor(model => model.DownloadUrl)
+        </th>
+        <th>
+            @Html.DisplayNameFor(model => model.IsFolder)
+        </th>
+        <th></th>
+    </tr>
+
+@foreach (var item in Model) {
+    <tr>
+        <td>
+            @Html.DisplayFor(modelItem => item.DisplayName)
+        </td>
+        <td>
+            @Html.DisplayFor(modelItem => item.Description)
+        </td>
+        <td>
+            @Html.DisplayFor(modelItem => item.DetailedInfo)
+        </td>
+        <td>
+            @Html.DisplayFor(modelItem => item.ThumbnailUrl)
+        </td>
+        <td>
+            @Html.DisplayFor(modelItem => item.DownloadUrl)
+        </td>
+        <td>
+            @Html.DisplayFor(modelItem => item.IsFolder)
+        </td>
+        <td>
+            @Html.ActionLink("Edit", "Edit", new { id=item.Id }) |
+            @Html.ActionLink("Details", "Details", new { id=item.Id }) |
+            @Html.ActionLink("Delete", "Delete", new { id=item.Id })
+        </td>
+    </tr>
+}
+
+</table>

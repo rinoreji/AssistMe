@@ -12,8 +12,8 @@
         @foreach (var item in infos)
         {
             <li style="padding-left:@(padding)px">
-                <a href="index.html"><i class="@(item.Children.Any()?"fa fa-files-o fa-fw":"fa fa-edit fa-fw")"></i>@item.Name@if (item.Children.Any())
-                                                                                  {<span class="fa arrow" />}</a>
+                <a href="index.html"><i class="@(item.Children.Any() ? "fa fa-files-o fa-fw" : "fa fa-edit fa-fw")"></i>@item.DisplayName@if (item.Children.Any())
+                                                                                                                              {<span class="fa arrow" />}</a>
                 @if (item.Children.Count > 0)
                 {
                     @ShowTree(item.Children, padding);
@@ -38,8 +38,8 @@
     @foreach (var item in Model)
     {
         <li style="padding-left: 10px">
-            <a href="index.html"><i class="@(item.Children.Any()?"fa fa-files-o fa-fw":"fa fa-edit fa-fw")"></i>@item.Name@if (item.Children.Any())
-                                                                              {<span class="fa arrow" />}</a>
+            <a href="index.html"><i class="@(item.Children.Any() ? "fa fa-files-o fa-fw" : "fa fa-edit fa-fw")"></i>@item.DisplayName@if (item.Children.Any())
+                                                                                                                          {<span class="fa arrow" />}</a>
             @ShowTree(item.Children, 0)
         </li>
     }

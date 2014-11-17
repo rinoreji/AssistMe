@@ -1,87 +1,73 @@
-﻿
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
+using System.Linq;
 namespace AssistMe.Data
 {
-    //public interface IDocumentInfo
-    //{
-    //    public string Name { get; set; }
-    //    public string Description { get; set; }
-    //}
-
     public class AFileInfo
     {
         public string Id { get; set; }
-        public string Name { get; set; }
+        public string DisplayName { get; set; }
+        public string FileName { get; set; }
         public string Description { get; set; }
         public string DetailedInfo { get; set; }
         public string ThumbnailUrl { get; set; }
         public string DownloadUrl { get; set; }
-        public AFolderInfo ParentFolder { get; set; }
+        public string ParentId { get; set; }
         private List<AFileInfo> _childern = new List<AFileInfo>();
         public List<AFileInfo> Children { get { return _childern; } set { _childern = value; } }
-        public bool IsFolder { get; set; }
+        public bool IsFolder { get { return MimeType == Constants.GFolderIdentifier; } }
+        public string MimeType { get; set; }
+        public bool IsSystemFile { get; set; }
+
+        public AFileInfo GetChild(string id)
+        {
+            return FindChildRecursive(id, this);
+        }
+        public override string ToString()
+        {
+            return string.Format("{0} - {1}", FileName, IsFolder ? "Folder" : "File");
+        }
+        public List<AFileInfo> GetAllChildren(AFileInfo parent = null, bool folderOnly = false)
+        {
+            if (parent == null)
+                parent = this;
+            var list = new List<AFileInfo>();
+            IEnumerable<AFileInfo> children = new List<AFileInfo>();
+            if (folderOnly)
+                children = parent.Children.Where(f => f.IsFolder);
+            else
+                children = parent.Children;
+            foreach (var child in children)
+            {
+                list.Add(child);
+                list.AddRange(GetAllChildren(child, folderOnly));
+            }
+            return list;
+        }
+
+        private AFileInfo FindChildRecursive(string id, AFileInfo aFile)
+        {
+            if (aFile.Id == id)
+                return aFile;
+            else if (aFile.IsFolder && aFile.Children.Any(f => f.Id == id))
+            {
+                return aFile.Children.First(f => f.Id == id);
+            }
+            else
+            {
+                if (aFile.IsFolder && aFile.Children.Any(f => f.IsFolder))
+                {
+                    foreach (var child in aFile.Children.Where(f => f.IsFolder))
+                    {
+                        return FindChildRecursive(id, child);
+                    }
+                }
+                return null;
+            }
+        }
     }
 
     public class AFolderInfo : AFileInfo
     {
-        public AFolderInfo() { IsFolder = true; }
-        public AFolderInfo(string name, string description, AFolderInfo parent)
-        {
-            Name = name; Description = description; ParentFolder = parent;
-            IsFolder = true;
-        }
-    }
-
-    public static class DummyData
-    {
-        public static AFolderInfo GetDummyStructure()
-        {
-            var rootFolder = new AFolderInfo("Root", "Doc root", null);
-            var certificateFolder = new AFolderInfo("Certificates", "root of all certificates", rootFolder);
-            var degreeCertificateFolder = new AFolderInfo("Degree certidicates", "degree certificates", certificateFolder);
-            var degreeCertificate = new AFileInfo()
-            {
-                Description = "Final certificate",
-                Name = "Consolidated",
-                ParentFolder = degreeCertificateFolder
-            };
-            var degreeCertificate2 = new AFileInfo()
-            {
-                Description = "2nd year certificate",
-                Name = "2nd Year",
-                ParentFolder = degreeCertificateFolder
-            };
-            var sslcCertificate = new AFileInfo()
-            {
-                Description = "SSLC",
-                Name = "SSLC",
-                ParentFolder = degreeCertificateFolder
-            };
-
-            degreeCertificateFolder.Children.Add(degreeCertificate);
-            degreeCertificateFolder.Children.Add(degreeCertificate2);
-            certificateFolder.Children.Add(sslcCertificate);
-            certificateFolder.Children.Add(degreeCertificateFolder);
-
-
-            var ebooksFolder = new AFolderInfo("ebooks", "All ebboks", null);
-            var mvcbook = new AFileInfo
-            {
-                Description = "MVC Tutorial",
-                Name = "MVC doc",
-            };
-            ebooksFolder.Children.Add(mvcbook);
-            degreeCertificateFolder.Children.Add(ebooksFolder);
-
-
-            rootFolder.Children.Add(certificateFolder);
-            rootFolder.Children.Add(ebooksFolder);
-            rootFolder.Children.Add(certificateFolder);
-            rootFolder.Children.Add(ebooksFolder);
-            rootFolder.Children.Add(certificateFolder);
-
-            return rootFolder;
-        }
-
+        public AFolderInfo() { MimeType = Constants.GFolderIdentifier; }
     }
 }

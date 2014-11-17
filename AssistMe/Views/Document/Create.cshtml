@@ -1,0 +1,96 @@
+﻿@model AssistMe.Data.AFileInfo
+
+@{
+    ViewBag.Title = "Create";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<h2>Create</h2>
+
+@using (Html.BeginForm("Create", "Document", FormMethod.Post, new { enctype = "multipart/form-data" }))
+{
+    <fieldset>
+        <legend>Create a new document</legend>
+
+
+        <div class="editor-label">
+            <label>File to upload</label>
+        </div>
+        <div class="editor-field">
+        <input type="file" name="file" />
+            </div>
+
+        <div class="editor-label">
+            <label>Folder name</label>
+        </div>
+        <div class="editor-field">
+            @Html.TextBox("Foldername", null, new { @class = "typeahead" })
+        </div>
+        <br />
+        <div class="editor-label">
+            @Html.LabelFor(model => model.DisplayName)
+        </div>
+        <div class="editor-field">
+            @Html.EditorFor(model => model.DisplayName)    
+            @Html.ValidationMessageFor(model => model.DisplayName)
+        </div>
+
+        <div class="editor-label">
+            @Html.LabelFor(model => model.Description)
+        </div>
+        <div class="editor-field">
+            @Html.EditorFor(model => model.Description)
+            @Html.ValidationMessageFor(model => model.Description)
+        </div>
+
+        <div class="editor-label">
+            @Html.LabelFor(model => model.DetailedInfo)
+        </div>
+        <div class="editor-field">
+            @Html.EditorFor(model => model.DetailedInfo)
+            @Html.ValidationMessageFor(model => model.DetailedInfo)
+        </div>
+
+        <p>
+            <input type="submit" value="Create" />
+        </p>
+    </fieldset>
+}
+@Html.ActionLink("Back to List", "Index")
+
+<script type="text/javascript">
+    $(document).ready(function () {
+        $.ajax({
+            url: "@Url.Action("FolderTag")",
+            type: "GET",
+            contentType: "application/json; charset=utf-8",
+            dataType: "json",
+            error: function (response) {
+                alert(response.responseText);
+            },
+            success: function (response) {
+                // constructs the suggestion engine
+                var folders = new Bloodhound({
+                    datumTokenizer: Bloodhound.tokenizers.obj.whitespace('value'),
+                    queryTokenizer: Bloodhound.tokenizers.whitespace,
+                    local: $.map(response, function (folder) { return { value: folder }; })
+                });
+                // kicks off the loading/processing of `local` and `prefetch`
+                folders.initialize();
+
+                $('.typeahead').typeahead({
+                    hint: true,
+                    highlight: true,
+                    minLength: 1
+                },
+                {
+                    name: 'folders',
+                    displayKey: 'value',
+                    // `ttAdapter` wraps the suggestion engine in an adapter that
+                    // is compatible with the typeahead jQuery plugin
+                    source: folders.ttAdapter()
+                });
+            }
+        });
+    });
+</script>

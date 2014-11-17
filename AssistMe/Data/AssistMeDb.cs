@@ -3,11 +3,12 @@ namespace AssistMe.Data
 {
     public class AssistMeDb
     {
-        private GDirectory _aDrive = new GDirectory();
-        public GDirectory AssistMeDrive
+        private AFolderInfo _aFolder = new AFolderInfo();
+        public AFolderInfo AssistMeDrive
         {
-            get { return _aDrive; }
-            set { _aDrive = value; }
+            get { return _aFolder; }
+            set { _aFolder = value; }
         }
+
     }
 }

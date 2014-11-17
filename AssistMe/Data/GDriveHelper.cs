@@ -15,7 +15,7 @@ namespace AssistMe
 {
     public class GDriveHelper
     {
-        public void GetUserDetails()
+        private void GetUserDetails()
         {
             var service = HttpContext.Current.Session["Oauth2Service"] as Oauth2Service;
             var userinfo = service.Userinfo.Get().Execute();
@@ -34,7 +34,7 @@ namespace AssistMe
 
             DriveService service = HttpContext.Current.Session["DriveService"] as DriveService;
 
-            if (string.IsNullOrWhiteSpace(UserConfig.DB.AssistMeDrive.id))
+            if (string.IsNullOrWhiteSpace(UserConfig.DB.AssistMeDrive.Id))
             {
                 UpdateLocaDbFromGDrive(service);
             }
@@ -42,15 +42,16 @@ namespace AssistMe
 
         private void UpdateLocaDbFromGDrive(DriveService service)
         {
-            var rootDir = GetDriveFileMetadata(new GDirectory { title = AppConfig.APP_DRIVE_FOLDER }, service, CreateIfNotExist: true);
+            var rootDir = GetDriveFileMetadata(new AFolderInfo { FileName = AppConfig.APP_DRIVE_FOLDER }, service, CreateIfNotExist: true);
             if (rootDir != null)
             {
-                UserConfig.DB.AssistMeDrive = rootDir.GetGFile<GDirectory>();
-                var gFile = new GFile { title = UserConfig.DB_NAME, parentId = UserConfig.DB.AssistMeDrive.id };
+                var dir = rootDir.GetGFile<AFolderInfo>();
+                dir.DisplayName = "Drive";
+                UserConfig.DB.AssistMeDrive = dir;
+                var gFile = new AFileInfo { FileName = UserConfig.DB_NAME, ParentId = UserConfig.DB.AssistMeDrive.Id };
                 var dbFile = GetDriveFileMetadata(gFile, service);
-                if (dbFile != null)
+                if (dbFile != null)//db file exists in GDrive
                 {
-                    //Let it be there, will think about it.
                     if (!IO.File.Exists(LocalDbPath))
                     {
                         var request = service.HttpClient.GetByteArrayAsync(dbFile.DownloadUrl);
@@ -58,8 +59,17 @@ namespace AssistMe
                         IO.File.WriteAllText(LocalDbPath, content);
                         UserConfig.DB = JsonConvert.DeserializeObject<AssistMeDb>(content);
                     }
+                    else//Local file exist, remove file exist
+                    {
+                        //Let it be there, will think about it. 
+                        //have to consider the one with recent changes
+                    }
                 }
-                else
+                else if (IO.File.Exists(LocalDbPath))//db file not in GDrive but exist localy, upload local to Drive
+                {
+
+                }
+                else//File not available anywhere, create new and upload to gdrive as well as local
                 {
                     UserConfig.DB.AssistMeDrive.Children.Add(gFile);
                     byte[] byteArray = Encoding.ASCII.GetBytes(JsonConvert.SerializeObject(UserConfig.DB));
@@ -67,12 +77,20 @@ namespace AssistMe
                     {
                         var uploadedFile = CreateFile(gFile, service, stream);
                         UserConfig.DB.AssistMeDrive.Children.Remove(gFile);
-                        UserConfig.DB.AssistMeDrive.Children.Add(uploadedFile.GetGFile<GFile>());
+                        var aUploadedFile = uploadedFile.GetGFile<AFileInfo>();
+                        aUploadedFile.IsSystemFile = true;
+                        aUploadedFile.DisplayName = "DB";
+                        UserConfig.DB.AssistMeDrive.Children.Add(aUploadedFile);
                     }
 
-                    IO.File.WriteAllText(LocalDbPath, JsonConvert.SerializeObject(UserConfig.DB));
+                    WriteDBDataToLocalDB();
                 }
             }
+        }
+
+        public void WriteDBDataToLocalDB()
+        {
+            IO.File.WriteAllText(LocalDbPath, JsonConvert.SerializeObject(UserConfig.DB));
         }
 
         private static string GetMimeType(string fileName)
@@ -85,46 +103,51 @@ namespace AssistMe
             return mimeType;
         }
 
-        void PopulateLocalDbData()
+        private void PopulateLocalDbData()
         {
             if (!IO.File.Exists(LocalDbPath))
                 return;
-            JsonSerializer serializer = new JsonSerializer();
-            var db = serializer.Deserialize(IO.File.OpenText(LocalDbPath), typeof(AssistMeDb)) as AssistMeDb;
+            var db = GetDbDataFromLocalDbPath();
             if (db != null)
                 UserConfig.DB = db;
         }
 
-        public File GetDriveFileMetadata(GFile file, DriveService service, bool CreateIfNotExist = false)
+        public AssistMeDb GetDbDataFromLocalDbPath()
         {
-            File resultFile = null;
+            var serializer = new JsonSerializer();
+            return serializer.Deserialize(IO.File.OpenText(LocalDbPath), typeof(AssistMeDb)) as AssistMeDb;
+        }
+
+        public File GetDriveFileMetadata(AFileInfo file, DriveService service, bool CreateIfNotExist = false)
+        {
             var result = getFileMetadata(file, service).Result;
             if (result != null && result.Items.Count > 0)
             {
-                resultFile = result.Items.First();
-                if (resultFile == null && CreateIfNotExist)
-                {
-                    return CreateFile(file, service);
-                }
+                return result.Items.First();
             }
-            return resultFile;
+            else if (CreateIfNotExist)
+            {
+                return CreateFile(file, service);
+            }
+
+            return null;
         }
 
-        public File CreateFile(GFile file, DriveService service, IO.Stream stream = null)
+        public File CreateFile(AFileInfo file, DriveService service, IO.Stream stream = null)
         {
-            if (string.IsNullOrWhiteSpace(file.mimeType))
-                file.mimeType = GetMimeType(file.title);
+            if (string.IsNullOrWhiteSpace(file.MimeType))
+                file.MimeType = GetMimeType(file.FileName);
 
             var body = new File
             {
-                Title = file.title,
-                MimeType = file.mimeType
+                Title = file.FileName,
+                MimeType = file.MimeType
             };
 
-            if (!string.IsNullOrWhiteSpace(file.parentId))
+            if (!string.IsNullOrWhiteSpace(file.ParentId))
             {
                 if (body.Parents == null) body.Parents = new List<ParentReference>();
-                body.Parents.Add(new ParentReference { Id = file.parentId });
+                body.Parents.Add(new ParentReference { Id = file.ParentId });
             }
 
             if (stream == null)
@@ -137,23 +160,23 @@ namespace AssistMe
             }
         }
 
-        private Task<FileList> getFileMetadata(GFile file, DriveService service)
+        private Task<FileList> getFileMetadata(AFileInfo file, DriveService service)
         {
             if (service != null)
             {
                 var request = service.Files.List();
-                if (file.IsDirectory)
+                if (file.IsFolder)
                 {
                     request.Q = string.Format(
                         "mimeType='{0}' and trashed=false and title='{1}'",
-                        file.mimeType, file.title);
+                        file.MimeType, file.FileName);
                 }
                 else
                 {
-                    request.Q = string.Format("trashed=false and title='{0}'", file.title);
+                    request.Q = string.Format("trashed=false and title='{0}'", file.FileName);
                 }
-                if (!string.IsNullOrWhiteSpace(file.parentId))
-                    request.Q += string.Format(" and '{0}' in parents", file.parentId);
+                if (!string.IsNullOrWhiteSpace(file.ParentId))
+                    request.Q += string.Format(" and '{0}' in parents", file.ParentId);
 
                 return request.ExecuteAsync();
             }

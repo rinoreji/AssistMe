@@ -4,6 +4,8 @@ using Google.Apis.Auth.OAuth2.Mvc;
 using Google.Apis.Drive.v2;
 using Google.Apis.Oauth2.v2;
 using Google.Apis.Util.Store;
+using System;
+using System.Web;
 using System.Web.Mvc;
 
 namespace AssistMe.Helpers
@@ -19,8 +21,15 @@ namespace AssistMe.Helpers
                     ClientSecret = "secret"
                 },
                 Scopes = new[] { DriveService.Scope.Drive, Oauth2Service.Scope.UserinfoEmail },
-                DataStore = new FileDataStore("Drive.Api.Auth.Store")
+                DataStore = GetFileDataStore()
             });
+
+        static FileDataStore GetFileDataStore()
+        {
+            var path = HttpContext.Current.Server.MapPath("~/App_Data/Drive.Api.Auth.Store");
+            var store = new FileDataStore(path, fullPath: true);
+            return store;
+        }
 
         public override string GetUserId(Controller controller)
         {
@@ -32,7 +41,7 @@ namespace AssistMe.Helpers
             var user = controller.Session["user"];
             if (user == null)
             {
-                user = "Dummy user";
+                user = Guid.NewGuid();
                 controller.Session["user"] = user;
             }
             return user.ToString();
@@ -42,6 +51,23 @@ namespace AssistMe.Helpers
         public override IAuthorizationCodeFlow Flow
         {
             get { return flow; }
+        }
+
+        public override string AuthCallback
+        {
+            get
+            {
+                return GetApplicationPath() + base.AuthCallback;
+            }
+        }
+
+        string GetApplicationPath()
+        {
+            var path = HttpContext.Current.Request.ApplicationPath;
+            if (path == "/")
+                return string.Empty;
+
+            return path;
         }
     }
 }
