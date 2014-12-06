@@ -1,11 +1,14 @@
 ﻿using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.Linq;
 namespace AssistMe.Data
 {
     public class AFileInfo
     {
-        private string _displayName;
         public string Id { get; set; }
+
+        private string _displayName;
+        [Required(ErrorMessage = "You must specify some display text")]
         public string DisplayName
         {
             get
@@ -23,6 +26,7 @@ namespace AssistMe.Data
         public string ThumbnailUrl { get; set; }
         public string DownloadUrl { get; set; }
         public string ParentId { get; set; }
+        [Required(ErrorMessage = "You must specify a Folder name")]
         public string FolderName { get; set; }
         private List<AFileInfo> _childern = new List<AFileInfo>();
         public List<AFileInfo> Children { get { return _childern; } set { _childern = value; } }

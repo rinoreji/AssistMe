@@ -1,3 +1,13 @@
 ﻿.twitter-typeahead {
     float:none !important;
 }
+
+input[type="file"] {
+    display:inline !important;
+}
+
+#DocAdd input {
+    margin-top:10px;
+}
+
+.field-validation-error{ color: red; font-weight: bold; }
