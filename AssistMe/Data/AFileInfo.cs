@@ -4,14 +4,26 @@ namespace AssistMe.Data
 {
     public class AFileInfo
     {
+        private string _displayName;
         public string Id { get; set; }
-        public string DisplayName { get; set; }
+        public string DisplayName
+        {
+            get
+            {
+                return string.IsNullOrWhiteSpace(_displayName) ? FileName : _displayName;
+            }
+            set
+            {
+                _displayName = value;
+            }
+        }
         public string FileName { get; set; }
         public string Description { get; set; }
         public string DetailedInfo { get; set; }
         public string ThumbnailUrl { get; set; }
         public string DownloadUrl { get; set; }
         public string ParentId { get; set; }
+        public string FolderName { get; set; }
         private List<AFileInfo> _childern = new List<AFileInfo>();
         public List<AFileInfo> Children { get { return _childern; } set { _childern = value; } }
         public bool IsFolder { get { return MimeType == Constants.GFolderIdentifier; } }
@@ -58,11 +70,13 @@ namespace AssistMe.Data
                 {
                     foreach (var child in aFile.Children.Where(f => f.IsFolder))
                     {
-                        return FindChildRecursive(id, child);
+                        var data = FindChildRecursive(id, child);
+                        if (data != null)
+                            return data;
                     }
                 }
-                return null;
             }
+            return null;
         }
     }
 

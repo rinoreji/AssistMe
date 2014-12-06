@@ -12,7 +12,7 @@
         @foreach (var item in infos)
         {
             <li style="padding-left:@(padding)px">
-                <a href="index.html"><i class="@(item.Children.Any() ? "fa fa-files-o fa-fw" : "fa fa-edit fa-fw")"></i>@item.DisplayName@if (item.Children.Any())
+                <a href="@Url.Action("Edit", "Document", new { Id=item.Id })"><i class="@(item.Children.Any() ? "fa fa-files-o fa-fw" : "fa fa-edit fa-fw")"></i>@item.DisplayName@if (item.Children.Any())
                                                                                                                               {<span class="fa arrow" />}</a>
                 @if (item.Children.Count > 0)
                 {

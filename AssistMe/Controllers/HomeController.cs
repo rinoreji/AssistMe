@@ -8,12 +8,6 @@ namespace AssistMe.Controllers
     {
         public ActionResult Index()
         {
-            ViewBag.UrlText = UserConfig.User_Id;
-            return View();
-        }
-
-        public ActionResult Drive()
-        {
             return View();
         }
     }

@@ -118,8 +118,17 @@ namespace AssistMe
             return serializer.Deserialize(IO.File.OpenText(LocalDbPath), typeof(AssistMeDb)) as AssistMeDb;
         }
 
+        public FileList GetAllFiles(DriveService service)
+        {
+            return getFileMetadata(null, service).Result;
+        }
+
         public File GetDriveFileMetadata(AFileInfo file, DriveService service, bool CreateIfNotExist = false)
         {
+            if (file != null && !string.IsNullOrWhiteSpace(file.Id))
+            {
+                return service.Files.Get(file.Id).ExecuteAsync().Result;
+            }
             var result = getFileMetadata(file, service).Result;
             if (result != null && result.Items.Count > 0)
             {
@@ -160,11 +169,19 @@ namespace AssistMe
             }
         }
 
+
         private Task<FileList> getFileMetadata(AFileInfo file, DriveService service)
         {
             if (service != null)
             {
                 var request = service.Files.List();
+                if (file == null)
+                {
+                    request.Q = string.Format(
+                        "mimeType!='{0}' and trashed=false",
+                        Constants.GFolderIdentifier);
+                    return request.ExecuteAsync();
+                }
                 if (file.IsFolder)
                 {
                     request.Q = string.Format(

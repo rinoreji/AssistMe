@@ -22,6 +22,7 @@ namespace AssistMe
                 "~/Content/font-awesome.css",
                 "~/Content/metisMenu.css",
                 "~/Content/template.css",
+                "~/Content/custom.css",
                 "~/Content/typeahead.css"
                 ));
         }

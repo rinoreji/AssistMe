@@ -4,58 +4,95 @@
     ViewBag.Title = "Create";
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
+<div class="row">
+    <div class="col-lg-6">
+        @using (Html.BeginForm("Create", "Document", FormMethod.Post, new { enctype = "multipart/form-data" }))
+        {
+            <fieldset>
+                @if (Model != null)
+                { 
+                    <legend>Edit document</legend>
+                }
+                else
+                { 
+                    <legend>Add/Create document</legend>
+                }
+                <div class="editor-label">
+                    <label>File to upload</label>
+                </div>
+                <div class="editor-field">
+                    <input type="file" name="fileupload" id="fileupload" value="Upload from HDD" />
+                    <input type="button" data-toggle="modal" data-target="#driveModal" value="Select from Google Drive" />
+                    @Html.HiddenFor(m => m.Id);
+                </div>
 
-<h2>Create</h2>
+                <div class="editor-label">
+                    @Html.Label("Folder name")
+                </div>
+                <div class="editor-field">
+                    @Html.TextBoxFor(model=>model.FolderName, null, new { @class = "typeahead" })
+                </div>
 
-@using (Html.BeginForm("Create", "Document", FormMethod.Post, new { enctype = "multipart/form-data" }))
-{
-    <fieldset>
-        <legend>Create a new document</legend>
+                <div class="editor-label">
+                    @Html.LabelFor(model => model.DisplayName)
+                </div>
+                <div class="editor-field">
+                    @Html.EditorFor(model => model.DisplayName)
+                    @Html.ValidationMessageFor(model => model.DisplayName)
+                </div>
 
+                <div class="editor-label">
+                    @Html.LabelFor(model => model.Description)
+                </div>
+                <div class="editor-field">
+                    @Html.EditorFor(model => model.Description)
+                    @Html.ValidationMessageFor(model => model.Description)
+                </div>
 
-        <div class="editor-label">
-            <label>File to upload</label>
-        </div>
-        <div class="editor-field">
-        <input type="file" name="file" />
+                <div class="editor-label">
+                    @Html.LabelFor(model => model.DetailedInfo)
+                </div>
+                <div class="editor-field">
+                    @Html.EditorFor(model => model.DetailedInfo)
+                    @Html.ValidationMessageFor(model => model.DetailedInfo)
+                </div>
+
+                <p>
+                    <input type="submit" value="Create" />
+                </p>
+            </fieldset>
+        }
+    </div>
+    <div class="col-lg-6">
+        <legend>
+            @if (Model != null)
+            {
+                @Html.Raw("Preview");
+            }
+        </legend>
+        @if (Model != null)
+        {
+            <img alt="No image" src="https://drive.google.com/thumbnail?id=@Model.Id" width="auto" height="auto" />
+            <a id="downloadlink" href="@Url.Action("Download", "Document", new { id = Model.Id })" target="_blank">download</a>
+        }
+    </div>
+</div>
+
+<div class="modal fade" id="driveModal">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button class="close" data-dismiss="modal">×</button>
+                <h4>Files on google drive</h4>
             </div>
-
-        <div class="editor-label">
-            <label>Folder name</label>
+            <div class="modal-body">
+                <div id="gfiles" style="height:auto; max-height:300px; overflow:auto;">
+                    <div id="contents">Loading...</div>
+                </div>
+            </div>
         </div>
-        <div class="editor-field">
-            @Html.TextBox("Foldername", null, new { @class = "typeahead" })
-        </div>
-        <br />
-        <div class="editor-label">
-            @Html.LabelFor(model => model.DisplayName)
-        </div>
-        <div class="editor-field">
-            @Html.EditorFor(model => model.DisplayName)    
-            @Html.ValidationMessageFor(model => model.DisplayName)
-        </div>
-
-        <div class="editor-label">
-            @Html.LabelFor(model => model.Description)
-        </div>
-        <div class="editor-field">
-            @Html.EditorFor(model => model.Description)
-            @Html.ValidationMessageFor(model => model.Description)
-        </div>
-
-        <div class="editor-label">
-            @Html.LabelFor(model => model.DetailedInfo)
-        </div>
-        <div class="editor-field">
-            @Html.EditorFor(model => model.DetailedInfo)
-            @Html.ValidationMessageFor(model => model.DetailedInfo)
-        </div>
-
-        <p>
-            <input type="submit" value="Create" />
-        </p>
-    </fieldset>
-}
+    </div>
+</div>
 @Html.ActionLink("Back to List", "Index")
 
 <script type="text/javascript">
@@ -91,6 +128,12 @@
                     source: folders.ttAdapter()
                 });
             }
+        });
+    });
+
+    $('#driveModal').on('show.bs.modal', function (data) {
+        $.get("@Url.Action("ListGDrive")", function (response) {
+            $('#gfiles').empty().append(response);
         });
     });
 </script>

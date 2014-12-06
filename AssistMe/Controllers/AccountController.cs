@@ -42,6 +42,7 @@ namespace AssistMe.Controllers
                     HttpClientInitializer = result.Credential,
                     ApplicationName = "AssistMe"
                 };
+                UserConfig.GoogleAccessToken = result.Credential.Token.AccessToken;
 
                 var service = new DriveService(serviceInitializer);
                 var oauthService = new Oauth2Service(serviceInitializer);

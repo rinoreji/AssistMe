@@ -1,0 +1,13 @@
+﻿@model IEnumerable<AssistMe.Data.AFileInfo>
+<ul>
+    @foreach (var item in Model)
+    {
+        <li><a class="gfile" id="@item.Id">@item.DisplayName</a></li>
+    }
+</ul>
+<script type="text/javascript">
+    $('.gfile').click(function (data) {
+        $('#Id').val(this.id);
+        $('#driveModal').modal('hide');
+    });
+</script>

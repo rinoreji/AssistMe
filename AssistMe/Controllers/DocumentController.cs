@@ -1,8 +1,9 @@
 ﻿using AssistMe.Data;
 using AssistMe.Helpers;
 using Google.Apis.Drive.v2;
-using System.Collections.Generic;
+using System;
 using System.Linq;
+using System.Net;
 using System.Web;
 using System.Web.Mvc;
 
@@ -11,27 +12,23 @@ namespace AssistMe.Controllers
     [CustomAuthorize]
     public class DocumentController : Controller
     {
-
         public ActionResult FolderTag()
         {
-            string[] tags = { "rino", "reji", "rrc", "npa", "mmo" };
-            var result = Json(tags, JsonRequestBehavior.AllowGet);
+            var folders = UserConfig.DB.AssistMeDrive.Children
+                .Where(f => f.IsFolder)
+                .Select(f => f.DisplayName).ToArray();
+
+            var result = Json(folders, JsonRequestBehavior.AllowGet);
             return result;
         }
-        //
-        // GET: /Document/
 
-        public ActionResult Index()
+        public ActionResult ListGDrive()
         {
-            return View(new List<AFileInfo>());
-        }
-
-        //
-        // GET: /Document/Details/5
-
-        public ActionResult Details(int id)
-        {
-            return View();
+            var service = HttpContext.Session["DriveService"] as DriveService;
+            var gHelper = new GDriveHelper();
+            var list = gHelper.GetAllFiles(service);
+            var model = list.Items.Select(f => f.GetGFile<AFileInfo>());
+            return PartialView("_ListGDrive", model);
         }
 
         //
@@ -48,131 +45,141 @@ namespace AssistMe.Controllers
         [HttpPost]
         public ActionResult Create(FormCollection collection)
         {
-            try
+            //try
+            //{
+            var fileInfo = new AFileInfo
             {
-                var fileInfo = new AFileInfo
-                {
-                    Description = collection["Description"],
-                    DetailedInfo = collection["DetailedInfo"],
-                    DisplayName = collection["DisplayName"],
-                };
+                Id = collection["Id"],
+                Description = collection["Description"],
+                DetailedInfo = collection["DetailedInfo"],
+                DisplayName = collection["DisplayName"],
+                FolderName = collection["FolderName"],
+            };
 
-                var foldername = collection["foldername"];
+            var folder = new AFolderInfo
+            {
+                ParentId = UserConfig.DB.AssistMeDrive.Id,
+                FileName = fileInfo.FolderName,
+                DisplayName = fileInfo.FolderName,
+            };
+            var service = HttpContext.Session["DriveService"] as DriveService;
+            var ghelper = new GDriveHelper();
+            var serverFolder = ghelper.GetDriveFileMetadata(folder, service, CreateIfNotExist: true);
 
-                //get the id of this folder by searching filetype=folder, trashed=false, title=foldername, parentid = id of the drive folder
-                //later we can think of storing the id of all folder created by us in the db itself
+            folder.Id = serverFolder.Id;
 
-                //ok, now if the folder exist, get id. else create it and get id
-                //set this id to the file parent
-                //upload this file.
-                //get the uploaded files details, create AFileInfo from the uploaded data
-                //Add this file to the ADrive variable, serialize to local and upload to server.
-                var folder = new AFolderInfo
-                {
-                    ParentId = UserConfig.DB.AssistMeDrive.Id,
-                    FileName = foldername,
-                    DisplayName = foldername,
-                };
-                var service = HttpContext.Session["DriveService"] as DriveService;
-                var ghelper = new GDriveHelper();
-                var serverFolder = ghelper.GetDriveFileMetadata(folder, service, CreateIfNotExist: true);
+            //check folder already exist
+            var existingFolder = UserConfig.DB.AssistMeDrive.GetChild(folder.Id);
+            if (existingFolder == null)
+            {
+                var parentofFolder = UserConfig.DB.AssistMeDrive.GetChild(folder.ParentId);
+                parentofFolder.Children.Add(folder);
+            }
+            //TODO: If folder changed while editing, Remove the file from older folder
+            fileInfo.ParentId = folder.Id;
 
-                folder.Id = serverFolder.Id;
-
-                //check folder already exist
-                var existingFolder = UserConfig.DB.AssistMeDrive.GetChild(folder.Id);
-                if (existingFolder == null)
-                {
-                    var parentofFolder = UserConfig.DB.AssistMeDrive.GetChild(folder.ParentId);
-                    parentofFolder.Children.Add(folder);
-                }
-
-                fileInfo.ParentId = folder.Id;
-
+            Google.Apis.Drive.v2.Data.File driveFile = null;
+            if (Request.Files.Count > 0 && Request.Files[0].ContentLength > 0)
+            {
                 var file = Request.Files[0];
                 fileInfo.FileName = file.FileName;
-
-                var uploadedFile = ghelper.CreateFile(fileInfo, service, file.InputStream);
-                fileInfo.Id = uploadedFile.Id;
-                fileInfo.DownloadUrl = uploadedFile.DownloadUrl;
-                fileInfo.ThumbnailUrl = uploadedFile.ThumbnailLink;
-
-                var parentFolderInDb = UserConfig.DB.AssistMeDrive.GetChild(fileInfo.ParentId);
-                parentFolderInDb.Children.Add(fileInfo);
-
-                var dbFile = UserConfig.DB.AssistMeDrive.Children.First(f => f.FileName != null && f.FileName == UserConfig.DB_NAME);
-                if (string.IsNullOrWhiteSpace(dbFile.Id))
-                {
-                    var serverDbFile = ghelper.GetDriveFileMetadata(new AFileInfo
-                    {
-                        ParentId = UserConfig.DB.AssistMeDrive.Id,
-                        FileName = UserConfig.DB_NAME,
-                    }, service);
-                    dbFile.Id = serverDbFile.Id;
-                    dbFile.IsSystemFile = true;
-                }
-
-                ghelper.WriteDBDataToLocalDB();
-                //upload db to gdrive
-
-
-                return RedirectToAction("Index");
+                driveFile = ghelper.CreateFile(fileInfo, service, file.InputStream);
             }
-            catch
+            else
             {
-                return View();
+                driveFile = ghelper.GetDriveFileMetadata(fileInfo, service);
             }
+
+            fileInfo.Id = driveFile.Id;
+            fileInfo.DownloadUrl = driveFile.DownloadUrl;
+            fileInfo.ThumbnailUrl = driveFile.ThumbnailLink;
+
+            var existingFile = UserConfig.DB.AssistMeDrive.GetChild(fileInfo.Id);
+            if (existingFile != null && existingFile.ParentId != null)
+            {
+                var folderOfFile = UserConfig.DB.AssistMeDrive.GetChild(existingFile.ParentId);
+                folderOfFile.Children.Remove(folderOfFile.Children.First(f => f.Id == existingFile.Id));
+            }
+
+            var parentFolderInDb = UserConfig.DB.AssistMeDrive.GetChild(fileInfo.ParentId);
+            parentFolderInDb.Children.Add(fileInfo);
+
+            var dbFile = UserConfig.DB.AssistMeDrive.Children.First(f => f.FileName != null && f.FileName == UserConfig.DB_NAME);
+            if (string.IsNullOrWhiteSpace(dbFile.Id))
+            {
+                var serverDbFile = ghelper.GetDriveFileMetadata(new AFileInfo
+                {
+                    ParentId = UserConfig.DB.AssistMeDrive.Id,
+                    FileName = UserConfig.DB_NAME,
+                }, service);
+                dbFile.Id = serverDbFile.Id;
+                dbFile.IsSystemFile = true;
+            }
+
+            ghelper.WriteDBDataToLocalDB();
+
+            return RedirectToAction("Index", "Home");
+            //}
+            //catch
+            //{
+            //    return View();
+            //}
         }
 
         //
         // GET: /Document/Edit/5
 
-        public ActionResult Edit(int id)
+        public ActionResult Edit(string id)
         {
-            return View();
+            var aFile = UserConfig.DB.AssistMeDrive.GetChild(id);
+            return View(string.Format("Create", id), aFile);
         }
 
         //
         // POST: /Document/Edit/5
 
-        [HttpPost]
-        public ActionResult Edit(int id, FormCollection collection)
+        public ActionResult Download(string id)
         {
-            try
-            {
-                // TODO: Add update logic here
+            var aFile = UserConfig.DB.AssistMeDrive.GetChild(id);
 
-                return RedirectToAction("Index");
-            }
-            catch
-            {
-                return View();
-            }
+            return File(DownloadFile(aFile.DownloadUrl),
+                System.Net.Mime.MediaTypeNames.Application.Octet, aFile.FileName);
         }
 
-        //
-        // GET: /Document/Delete/5
 
-        public ActionResult Delete(int id)
+        public static System.IO.Stream DownloadFile(string DownloadUrl)
         {
-            return View();
-        }
-
-        //
-        // POST: /Document/Delete/5
-
-        [HttpPost]
-        public ActionResult Delete(int id, FormCollection collection)
-        {
-            try
+            if (!String.IsNullOrEmpty(DownloadUrl))
             {
-                // TODO: Add delete logic here
-
-                return RedirectToAction("Index");
+                try
+                {
+                    HttpWebRequest request = (HttpWebRequest)WebRequest.Create(
+                        new Uri(DownloadUrl));
+                    //UserConfig.UserCredential.
+                    //authenticator.ApplyAuthenticationToRequest(request);
+                    request.Headers.Add("Authorization", "Bearer " + UserConfig.GoogleAccessToken);
+                    HttpWebResponse response = (HttpWebResponse)request.GetResponse();
+                    if (response.StatusCode == HttpStatusCode.OK)
+                    {
+                        return response.GetResponseStream();
+                    }
+                    else
+                    {
+                        Console.WriteLine(
+                            "An error occurred: " + response.StatusDescription);
+                        return null;
+                    }
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine("An error occurred: " + e.Message);
+                    return null;
+                }
             }
-            catch
+            else
             {
-                return View();
+                // The file doesn't have any content stored on Drive.
+                return null;
             }
         }
     }
