@@ -5,8 +5,8 @@
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
 <div class="row">
-    <div class="col-lg-6" >
-        @using (Html.BeginForm("Create", "Document", FormMethod.Post, new { enctype = "multipart/form-data",id="DocAdd" }))
+    <div class="col-lg-6">
+        @using (Html.BeginForm("Create", "Document", FormMethod.Post, new { enctype = "multipart/form-data", id = "DocAdd" }))
         {
             @Html.AntiForgeryToken()
 
@@ -18,16 +18,17 @@
                 else
                 { 
                     <legend>Add/Create document</legend>
+                    <div class="editor-label">
+                        <label>File selection</label>
+                    </div>
+                    <div class="editor-field">
+                        <input type="button" data-toggle="modal" data-target="#driveModal" value="Select from Google Drive" />
+                        or
+                    <input type="file" name="fileupload" id="fileupload" />
+                    </div>
                 }
-                <div class="editor-label">
-                    <label>File selection</label>
-                </div>
-                <div class="editor-field">
-                    <input type="button" data-toggle="modal" data-target="#driveModal" value="Select from Google Drive" />
-                    or
-                    <input type="file" name="fileupload" id="fileupload"/>
-                    @Html.HiddenFor(m => m.Id)
-                </div>
+
+                @Html.HiddenFor(m => m.Id)
 
                 <div class="editor-field">
                     @Html.TextBoxFor(model => model.FolderName, null, new { @class = "typeahead", placeholder = "Folder name, Required" })<br />
@@ -86,8 +87,7 @@
 </div>
 
 <script type="text/javascript">
-    $('#DocAdd').submit(function ()
-    {
+    $('#DocAdd').submit(function () {
         var fileId = $('#Id').val();
         var file = $('#fileupload').val();
         if ((fileId != null && fileId.trim().length > 1) || (file != null && file.trim().length > 1))

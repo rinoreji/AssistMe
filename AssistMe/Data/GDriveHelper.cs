@@ -15,17 +15,26 @@ namespace AssistMe
 {
     public class GDriveHelper
     {
+        private UserConfig userConfig
+        {
+            get
+            {
+                return (UserConfig)HttpContext.Current.Session["UserConfig"];
+            }
+        }
+
         private void GetUserDetails()
         {
             var service = HttpContext.Current.Session["Oauth2Service"] as Oauth2Service;
             var userinfo = service.Userinfo.Get().Execute();
             HttpContext.Current.Session["user"] = userinfo.Email;
 
-            UserConfig.User_Id = userinfo.Email;
-            UserConfig.DB_NAME = string.Format("{0}.json", UserConfig.User_Id);
+            userConfig.User_Id = userinfo.Email;
+            userConfig.DB_NAME = string.Format("{0}.json", userConfig.User_Id);
+            HttpContext.Current.Session["UserConfig"] = userConfig;
         }
 
-        public string LocalDbPath { get { return HttpContext.Current.Server.MapPath(string.Format("~/App_Data/{0}", UserConfig.DB_NAME)); } }
+        public string LocalDbPath { get { return HttpContext.Current.Server.MapPath(string.Format("~/App_Data/{0}", userConfig.DB_NAME)); } }
 
         public void InitBaseSystem()
         {
@@ -34,7 +43,7 @@ namespace AssistMe
 
             DriveService service = HttpContext.Current.Session["DriveService"] as DriveService;
 
-            if (string.IsNullOrWhiteSpace(UserConfig.DB.AssistMeDrive.Id))
+            if (string.IsNullOrWhiteSpace(userConfig.DB.AssistMeDrive.Id))
             {
                 UpdateLocaDbFromGDrive(service);
             }
@@ -47,8 +56,9 @@ namespace AssistMe
             {
                 var dir = rootDir.GetGFile<AFolderInfo>();
                 dir.DisplayName = "Drive";
-                UserConfig.DB.AssistMeDrive = dir;
-                var gFile = new AFileInfo { FileName = UserConfig.DB_NAME, ParentId = UserConfig.DB.AssistMeDrive.Id };
+                userConfig.DB.AssistMeDrive = dir;
+                HttpContext.Current.Session["UserConfig"] = userConfig;
+                var gFile = new AFileInfo { FileName = userConfig.DB_NAME, ParentId = userConfig.DB.AssistMeDrive.Id };
                 var dbFile = GetDriveFileMetadata(gFile, service);
                 if (dbFile != null)//db file exists in GDrive
                 {
@@ -57,7 +67,8 @@ namespace AssistMe
                         var request = service.HttpClient.GetByteArrayAsync(dbFile.DownloadUrl);
                         var content = Encoding.ASCII.GetString(request.Result);
                         IO.File.WriteAllText(LocalDbPath, content);
-                        UserConfig.DB = JsonConvert.DeserializeObject<AssistMeDb>(content);
+                        userConfig.DB = JsonConvert.DeserializeObject<AssistMeDb>(content);
+                        HttpContext.Current.Session["UserConfig"] = userConfig;
                     }
                     else//Local file exist, remove file exist
                     {
@@ -71,17 +82,18 @@ namespace AssistMe
                 }
                 else//File not available anywhere, create new and upload to gdrive as well as local
                 {
-                    UserConfig.DB.AssistMeDrive.Children.Add(gFile);
-                    byte[] byteArray = Encoding.ASCII.GetBytes(JsonConvert.SerializeObject(UserConfig.DB));
+                    userConfig.DB.AssistMeDrive.Children.Add(gFile);
+                    byte[] byteArray = Encoding.ASCII.GetBytes(JsonConvert.SerializeObject(userConfig.DB));
                     using (var stream = new IO.MemoryStream(byteArray))
                     {
                         var uploadedFile = CreateFile(gFile, service, stream);
-                        UserConfig.DB.AssistMeDrive.Children.Remove(gFile);
+                        userConfig.DB.AssistMeDrive.Children.Remove(gFile);
                         var aUploadedFile = uploadedFile.GetGFile<AFileInfo>();
                         aUploadedFile.IsSystemFile = true;
                         aUploadedFile.DisplayName = "DB";
-                        UserConfig.DB.AssistMeDrive.Children.Add(aUploadedFile);
+                        userConfig.DB.AssistMeDrive.Children.Add(aUploadedFile);
                     }
+                    HttpContext.Current.Session["UserConfig"] = userConfig;
 
                     WriteDBDataToLocalDB();
                 }
@@ -90,7 +102,7 @@ namespace AssistMe
 
         public void WriteDBDataToLocalDB()
         {
-            IO.File.WriteAllText(LocalDbPath, JsonConvert.SerializeObject(UserConfig.DB));
+            IO.File.WriteAllText(LocalDbPath, JsonConvert.SerializeObject(userConfig.DB));
         }
 
         private static string GetMimeType(string fileName)
@@ -109,7 +121,10 @@ namespace AssistMe
                 return;
             var db = GetDbDataFromLocalDbPath();
             if (db != null)
-                UserConfig.DB = db;
+            {
+                userConfig.DB = db;
+                HttpContext.Current.Session["UserConfig"] = userConfig;
+            }
         }
 
         public AssistMeDb GetDbDataFromLocalDbPath()

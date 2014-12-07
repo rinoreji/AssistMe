@@ -3,6 +3,8 @@ using Google.Apis.Auth.OAuth2.Mvc;
 using Google.Apis.Drive.v2;
 using Google.Apis.Oauth2.v2;
 using Google.Apis.Services;
+using log4net;
+using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Web;
@@ -12,17 +14,26 @@ namespace AssistMe.Controllers
 {
     public class AccountController : Controller
     {
+        private static readonly ILog log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
+
+        private UserConfig userConfig
+        {
+            get
+            {
+                return (UserConfig)Session["UserConfig"];
+            }
+        }
         //
         // GET: /Account/
 
         public async Task<ActionResult> Login(CancellationToken token)
         {
+            Session["UserConfig"] = new UserConfig();
             return await UpdateDatabase(token);
         }
 
         public ActionResult Logout(bool LogoutGoogle = false)
         {
-            UserConfig.ResetConfig();
             HttpContext.Session.Clear();
             if (LogoutGoogle)
                 return new RedirectResult("https://www.google.com/accounts/Logout");
@@ -42,7 +53,9 @@ namespace AssistMe.Controllers
                     HttpClientInitializer = result.Credential,
                     ApplicationName = "AssistMe"
                 };
-                UserConfig.GoogleAccessToken = result.Credential.Token.AccessToken;
+
+                userConfig.GoogleAccessToken = result.Credential.Token.AccessToken;
+                Session["UserConfig"] = userConfig;
 
                 var service = new DriveService(serviceInitializer);
                 var oauthService = new Oauth2Service(serviceInitializer);
@@ -51,6 +64,9 @@ namespace AssistMe.Controllers
 
                 var gDriveHelper = new GDriveHelper();
                 gDriveHelper.InitBaseSystem();
+
+                if (log.IsDebugEnabled)
+                    log.DebugFormat("Base init completed for user: {0}", userConfig.User_Id);
 
                 //var data = await result.Credential.RefreshTokenAsync(cancellationToken);
                 //ViewBag.Message =  // "FILE COUNT IS: " + list.Items.Count();

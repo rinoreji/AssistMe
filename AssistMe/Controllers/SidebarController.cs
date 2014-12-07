@@ -7,11 +7,19 @@ namespace AssistMe.Controllers
 {
     public class SidebarController : Controller
     {
+        private UserConfig userConfig
+        {
+            get
+            {
+                return (UserConfig)Session["UserConfig"];
+            }
+        }
+
         [ChildActionOnly]
         public ActionResult Index()
         {
             var model = new List<AFileInfo>();
-            model.AddRange(UserConfig.DB.AssistMeDrive.Children.Where(f => f.IsFolder));
+            model.AddRange(userConfig.DB.AssistMeDrive.Children.Where(f => f.IsFolder));
             return PartialView(model);
         }
     }

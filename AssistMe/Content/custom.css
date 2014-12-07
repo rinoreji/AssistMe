@@ -1,13 +1,31 @@
 ﻿.twitter-typeahead {
-    float:none !important;
+    float: none !important;
 }
 
 input[type="file"] {
-    display:inline !important;
+    display: inline !important;
 }
 
 #DocAdd input {
-    margin-top:10px;
+    margin-top: 10px;
 }
 
-.field-validation-error{ color: red; font-weight: bold; }
+.field-validation-error {
+    color: red;
+    font-weight: bold;
+}
+
+.header {
+    color: #777;
+    font-size: 16px;
+    padding:5px;
+    padding-left:25px;
+}
+
+@media(min-width:768px) {
+    .hideOnBigScreen {
+        display:none;
+    }
+}
+
+

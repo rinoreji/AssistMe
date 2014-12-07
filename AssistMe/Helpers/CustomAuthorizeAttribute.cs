@@ -6,11 +6,20 @@ namespace AssistMe.Helpers
 {
     public class CustomAuthorizeAttribute : AuthorizeAttribute
     {
+        private UserConfig userConfig
+        {
+            get
+            {
+                return (UserConfig)HttpContext.Current.Session["UserConfig"];
+            }
+        }
+
         protected override bool AuthorizeCore(HttpContextBase httpContext)
         {
             return httpContext.Session["user"] != null &&
-                UserConfig.DB.AssistMeDrive != null &&
-                !string.IsNullOrWhiteSpace(UserConfig.DB.AssistMeDrive.Id);
+                userConfig != null &&
+                userConfig.DB.AssistMeDrive != null &&
+                !string.IsNullOrWhiteSpace(userConfig.DB.AssistMeDrive.Id);
         }
         protected override void HandleUnauthorizedRequest(AuthorizationContext filterContext)
         {
